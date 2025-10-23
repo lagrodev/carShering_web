@@ -35,6 +35,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuthInfo } from '../../services/profileService'
+import api from "../../services/api.js";
+import {logout as authLogout} from "../../services/authService.js";
 
 const user = ref(null)
 const loading = ref(true)
@@ -60,14 +62,16 @@ const fetchProfile = async () => {
 
 const logout = async () => {
   try {
-    // можно вызвать POST /api/logout с withCredentials на бэке, чтобы удалить куку
-    document.cookie = 'jwt=; Max-Age=0; path=/;'
-    user.value = null
-    router.push('/')
+
+    authLogout()
+    router.push('/auth')
+
   } catch (err) {
     console.error(err)
   }
 }
+
+// Logout — вызывает бэкенд, который удаляет cookie
 
 onMounted(() => {
   fetchProfile()

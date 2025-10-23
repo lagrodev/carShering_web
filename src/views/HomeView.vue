@@ -138,12 +138,18 @@ onMounted(() => {
             @click="viewCar(car.id)"
         >
           <div class="car-hover-container">
-            <div class="car-image-placeholder"></div>
+            <div class="car-image-wrapper">
+              <img
+                  src="../assets/images/blue-car.png"
+                  alt="Car"
+                  class="car-image"
+              />
+            </div>
             <div class="hover-overlay">
               <div class="hover-content">
                 <p><strong>Класс:</strong> {{ car.carClass || '—' }}</p>
                 <p><strong>Год выпуска:</strong> {{ car.yearOfIssue || '—' }}</p>
-                <p><strong>Цена:</strong> {{ car.rent }} ₽/час</p>
+                <p><strong>Цена:</strong> {{ car.rent }} ₽/месяц</p>
               </div>
             </div>
             <div class="car-info">
