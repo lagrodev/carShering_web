@@ -1,0 +1,244 @@
+
+.home-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.hero {
+    text-align: center;
+    padding: 30px 0 20px;
+}
+
+.hero h1 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+}
+
+/* Фильтры */
+.filters-section {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 25px 0;
+}
+
+.cars-grid {
+    display: grid;
+    gap: 22px;
+    /* grid-template-columns управляется через :style */
+}
+
+.filter-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-item label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.filter-input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+/* Выпадающий список */
+.suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #3b82f6;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 10000;
+    border-radius: 0 0 6px 6px;
+    margin-top: 2px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.suggestion-item:hover {
+    background: #f1f5f9;
+}
+
+.reset-btn {
+    padding: 6px 12px;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/* Карточки */
+.cars-section {
+    margin-top: 25px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+}
+
+.cars-grid {
+    display: grid;
+    grid-template-columns: repeat(v-bind(cardsPerRow), 1fr);
+    gap: 22px;
+}
+
+.car-card {
+    cursor: pointer;
+}
+
+.car-hover-container {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+}
+
+.car-card:hover .car-hover-container {
+    transform: translateY(-4px);
+}
+
+.car-image-placeholder {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.2rem;
+    transition: height 0.3s ease;
+}
+
+.car-info {
+    padding: 14px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.car-info h3 {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+}
+
+.meta {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.car-card:hover .car-image-placeholder {
+    height: 100%;
+}
+
+.car-card:hover .car-info {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.hover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.car-card:hover .hover-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.hover-content {
+    color: white;
+    text-align: center;
+    padding: 0 20px;
+    font-size: 1rem;
+}
+
+.hover-content p {
+    margin: 8px 0;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 7px 12px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.pagination button.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+     /* Глобальные стили для выпадающих списков */
+ .suggestions {
+     position: absolute !important;
+     top: 100% !important;
+     left: 0 !important;
+     right: 0 !important;
+     background: white !important;
+     border: 1px solid #3b82f6 !important;
+     max-height: 180px !important;
+     overflow-y: auto !important;
+     z-index: 10000 !important;
+     border-radius: 0 0 6px 6px !important;
+     margin-top: 2px !important;
+     box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+ }
+
+.suggestion-item {
+    padding: 8px 12px !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.suggestion-item:hover {
+    background: #f1f5f9 !important;
+}
