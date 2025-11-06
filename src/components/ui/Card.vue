@@ -1,21 +1,53 @@
 <template>
-  <div class="card">
+  <div :class="cardClasses">
     <slot />
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import { computed } from 'vue'
 
-<style scoped>
-.card {
-  padding: 20px;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  transition: transform 0.2s ease;
-}
+const props = defineProps({
+  hover: {
+    type: Boolean,
+    default: true
+  },
+  padding: {
+    type: String,
+    default: 'md',
+    validator: (value) => ['none', 'sm', 'md', 'lg'].includes(value)
+  },
+  shadow: {
+    type: String,
+    default: 'md',
+    validator: (value) => ['none', 'sm', 'md', 'lg'].includes(value)
+  }
+})
 
-.card:hover {
-  transform: translateY(-4px);
-}
-</style>
+const cardClasses = computed(() => {
+  const baseClasses = 'bg-white rounded-xl transition-all duration-200'
+  
+  const paddingClasses = {
+    none: '',
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8'
+  }
+  
+  const shadowClasses = {
+    none: '',
+    sm: 'shadow-sm',
+    md: 'shadow-md',
+    lg: 'shadow-lg'
+  }
+  
+  const hoverClass = props.hover ? 'hover:-translate-y-1 hover:shadow-xl' : ''
+  
+  return [
+    baseClasses,
+    paddingClasses[props.padding],
+    shadowClasses[props.shadow],
+    hoverClass
+  ].filter(Boolean).join(' ')
+})
+</script>

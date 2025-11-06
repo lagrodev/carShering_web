@@ -1,47 +1,58 @@
-<!-- src/components/FilterSelect.vue -->
 <template>
-  <div class="filter-select">
-    <label v-if="label" class="filter-select__label">{{ label }}</label>
+  <div class="relative w-full">
+    <!-- Label -->
+    <label v-if="label" class="block text-sm font-medium text-gray-700 mb-2">
+      {{ label }}
+    </label>
 
-    <div class="filter-select__input-wrapper" ref="wrapperRef">
+    <!-- Input Wrapper -->
+    <div class="relative" ref="wrapperRef">
       <input
-          v-model="query"
-          class="filter-select__input"
-          :placeholder="placeholder"
-          @focus="isFocused = true"
-          @blur="handleBlur"
-          @keydown.enter.stop.prevent="handleEnter"
+        v-model="query"
+        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 text-gray-900"
+        :placeholder="placeholder"
+        @focus="isFocused = true"
+        @blur="handleBlur"
+        @keydown.enter.stop.prevent="handleEnter"
       />
 
-      <!-- Выпадающий список -->
+      <!-- Dropdown -->
       <div
-          v-if="isFocused && hasOptions"
-          class="filter-select__dropdown"
-          @mousedown.prevent
+        v-if="isFocused && hasOptions"
+        class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+        @mousedown.prevent
       >
         <div
-            v-for="item in filteredItems"
-            :key="item"
-            class="filter-select__option"
-            @click="select(item)"
+          v-for="item in filteredItems"
+          :key="item"
+          class="px-4 py-2.5 text-sm text-gray-900 hover:bg-primary-50 hover:text-primary-700 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+          @click="select(item)"
         >
           {{ item }}
         </div>
-        <div v-if="filteredItems.length === 0" class="filter-select__no-results">
+        <div v-if="filteredItems.length === 0" class="px-4 py-3 text-sm text-gray-500 text-center">
           Ничего не найдено
         </div>
       </div>
     </div>
 
-    <!-- Чипы -->
-    <div v-if="selected.length" class="filter-select__chips">
+    <!-- Selected Chips -->
+    <div v-if="selected.length" class="flex flex-wrap gap-2 mt-3">
       <span
-          v-for="item in selected"
-          :key="item"
-          class="filter-select__chip"
+        v-for="item in selected"
+        :key="item"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium hover:bg-primary-200 transition-colors duration-150"
       >
         {{ item }}
-        <button type="button" class="filter-select__chip-remove" @click="remove(item)">×</button>
+        <button
+          type="button"
+          class="ml-0.5 hover:text-primary-900 focus:outline-none transition-colors"
+          @click="remove(item)"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </span>
     </div>
   </div>
@@ -71,8 +82,8 @@ const selected = computed({
 const filteredItems = computed(() => {
   const q = query.value?.toLowerCase().trim()
   return props.options
-      .filter(item => !selected.value.includes(item))
-      .filter(item => !q || item.toLowerCase().includes(q))
+    .filter(item => !selected.value.includes(item))
+    .filter(item => !q || item.toLowerCase().includes(q))
 })
 
 const hasOptions = computed(() => props.options.length > 0)
@@ -90,7 +101,6 @@ const remove = (item) => {
 }
 
 const handleBlur = () => {
-  // Задержка, чтобы клик по dropdown успел сработать
   setTimeout(() => {
     isFocused.value = false
   }, 150)
@@ -116,102 +126,3 @@ const handleEnter = () => {
   }
 }
 </script>
-
-<style scoped>
-.filter-select {
-  position: relative;
-  width: 100%;
-}
-
-.filter-select__label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  font-size: 14px;
-  color: #334155;
-}
-
-.filter-select__input-wrapper {
-  position: relative;
-}
-
-.filter-select__input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.filter-select__input:focus {
-  outline: none;
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-.filter-select__dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #cbd5e1;
-  border-top: none;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 10;
-  margin-top: 4px;
-  border-radius: 0 0 6px 6px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.filter-select__option {
-  padding: 8px 10px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #1e293b;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.filter-select__option:hover {
-  background-color: #f1f5f9;
-}
-
-.filter-select__no-results {
-  padding: 8px 10px;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.filter-select__chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.filter-select__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #e6f2ff;
-  color: #1e3a8a;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.filter-select__chip-remove {
-  background: transparent;
-  border: none;
-  color: #1e3a8a;
-  font-weight: bold;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-}
-
-
-</style>

@@ -13,7 +13,15 @@ export const changePassword = (data) => {
 }
 
 export const getDocument = () => {
-    return api.get('/profile/document').then(response => response.data)
+    return api.get('/profile/document', {
+        // Указываем что 404 - это нормально для этого эндпоинта
+        validateStatus: (status) => status < 500
+    }).then(response => {
+        if (response.status === 404) {
+            return null // Возвращаем null вместо данных
+        }
+        return response.data
+    })
 }
 
 export const createDocument = (data) => {
