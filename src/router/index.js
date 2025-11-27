@@ -33,6 +33,12 @@ const routes = [
         meta: { requiresAuth: true }
     },
     { 
+        path: '/favorites', 
+        name: 'Favorites', 
+        component: () => import('../views/FavoritesView.vue'),
+        meta: { requiresAuth: true }
+    },
+    { 
         path: '/contracts/:id', 
         name: 'ContractDetails', 
         component: () => import('../views/ContractDetailsView.vue'),
@@ -42,6 +48,18 @@ const routes = [
         path: '/auth', 
         name: 'Auth', 
         component: AuthView,
+        meta: { requiresAuth: false }
+    },
+    { 
+        path: '/verify', 
+        name: 'VerifyEmail', 
+        component: () => import('../views/VerifyEmailView.vue'),
+        meta: { requiresAuth: false }
+    },
+    { 
+        path: '/reset', 
+        name: 'ResetPassword', 
+        component: () => import('../views/ResetPasswordView.vue'),
         meta: { requiresAuth: false }
     },
     { 
@@ -82,6 +100,12 @@ const routes = [
         component: () => import('../views/AdminContractDetailsView.vue'),
         props: route => ({ id: Number(route.params.id) }),
         meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    { 
+        path: '/statistics', 
+        name: 'Statistics', 
+        component: () => import('../views/StatisticsView.vue'),
+        meta: { requiresAuth: true }
     },
     { 
         path: '/:pathMatch(.*)*', 

@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-bold text-gray-900">Управление автомобилями</h2>
-      <Button variant="primary" @click="router.push('/admin/cars/new')">
+      <Button variant="primary" @click="showCarModal = true">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -82,6 +82,32 @@
             min="1990" 
             max="2025"
             placeholder="2025"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700">Мин. цена (₽/день)</label>
+          <input 
+            v-model.number="filters.minCell" 
+            type="number" 
+            :min="minMaxCell.min"
+            :max="filters.maxCell || minMaxCell.max"
+            :step="100"
+            placeholder="От"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700">Макс. цена (₽/день)</label>
+          <input 
+            v-model.number="filters.maxCell" 
+            type="number" 
+            :min="filters.minCell || minMaxCell.min"
+            :max="minMaxCell.max"
+            :step="100"
+            placeholder="До"
             class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
           />
         </div>
@@ -205,6 +231,15 @@
         </div>
       </div>
     </Card>
+
+    <!-- Car Form Modal -->
+    <CarFormModal
+      v-if="showCarModal"
+      :all-body-types="allBodyTypes"
+      :all-classes="allClasses"
+      @close="showCarModal = false"
+      @saved="handleCarSaved"
+    />
   </div>
 </template>
 
@@ -217,6 +252,7 @@ import api from '../../services/api'
 import Card from '../ui/Card.vue'
 import FilterSelect from '../FilterSelect.vue'
 import Button from '../ui/Button.vue'
+import CarFormModal from './CarFormModal.vue'
 
 const router = useRouter()
 const { showNotification } = useNotification()
@@ -225,6 +261,7 @@ const cars = ref([])
 const loading = ref(false)
 const currentPage = ref(0)
 const totalPages = ref(0)
+const showCarModal = ref(false)
 
 const allBodyTypes = ref([])
 const allClasses = ref([])
@@ -242,17 +279,22 @@ const filters = ref({
   bodyType: '',
   carState: '',
   minYear: null,
-  maxYear: null
+  maxYear: null,
+  minCell: null,
+  maxCell: null
 })
+
+const minMaxCell = ref({ min: 0, max: 999999 })
 
 const loadFilterOptions = async () => {
   try {
-    const [bodyTypesRes, classesRes, statesRes, brandsRes, modelsRes] = await Promise.all([
+    const [bodyTypesRes, classesRes, statesRes, brandsRes, modelsRes, minMaxRes] = await Promise.all([
       api.get('/car/filters/body-types'),
       api.get('/car/filters/classes'),
       api.get('/admin/cars/state'),
       api.get('/car/filters/brands'),
-      api.get('/car/filters/models')
+      api.get('/car/filters/models'),
+      api.get('/car/filters/min-max-cell')
     ])
     allBodyTypes.value = bodyTypesRes.data
     allClasses.value = classesRes.data
@@ -260,6 +302,7 @@ const loadFilterOptions = async () => {
     allCarStates.value = statesRes.data.map(state => state.status)
     allBrands.value = brandsRes.data
     allModelNames.value = modelsRes.data
+    minMaxCell.value = minMaxRes.data
   } catch (error) {
     console.error('Не удалось загрузить опции фильтров:', error)
   }
@@ -294,6 +337,12 @@ const loadCars = async (page = 0) => {
     }
     if (filters.value.maxYear !== null) {
       params.maxYear = filters.value.maxYear
+    }
+    if (filters.value.minCell !== null && filters.value.minCell > 0) {
+      params.min_cell = filters.value.minCell
+    }
+    if (filters.value.maxCell !== null && filters.value.maxCell > 0 && filters.value.maxCell < 999999) {
+      params.max_cell = filters.value.maxCell
     }
     
     const response = await api.get('/admin/cars', { params })
@@ -332,7 +381,9 @@ const resetFilters = () => {
     bodyType: '',
     carState: '',
     minYear: null,
-    maxYear: null
+    maxYear: null,
+    minCell: null,
+    maxCell: null
   }
   loadCars()
 }
@@ -367,6 +418,15 @@ const viewCar = (carId) => {
 
 const goToPage = (page) => {
   loadCars(page)
+}
+
+const handleCarSaved = () => {
+  showCarModal.value = false
+  showNotification({
+    type: 'success',
+    message: 'Автомобиль успешно создан'
+  })
+  loadCars()
 }
 
 // Автоматическая перезагрузка при изменении фильтров

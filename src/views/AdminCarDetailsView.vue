@@ -213,7 +213,7 @@ onMounted(() => {
         <!-- Image Section -->
         <div class="relative bg-gradient-to-br from-primary-100 to-purple-100 aspect-video md:aspect-[21/9]">
           <img
-            src="../assets/images/blue-car.png"
+            :src="car.imageUrl || '../assets/images/blue-car.png'"
             :alt="`${car.brand} ${car.model}`"
             class="w-full h-full object-contain p-8"
           />

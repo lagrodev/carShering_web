@@ -1,6 +1,6 @@
 ﻿<script setup>
 import { ref, onMounted, computed } from 'vue'
-import { getProfile, updateProfile, changePassword, getDocument as fetchDocument, createDocument as addDoc, updateDocument as updateDoc } from '../services/profileService.js'
+import { getProfile, updateProfile, changePassword, getDocument as fetchDocument, createDocument as addDoc, updateDocument as updateDoc, sendVerificationEmail } from '../services/profileService.js'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 import { useNotification } from '../composables/useNotification'
@@ -17,6 +17,7 @@ const user = ref(null)
 const document = ref(null)
 const loading = ref(false)
 const router = useRouter()
+const sendingVerification = ref(false)
 
 const editMode = ref(false)
 const documentEditMode = ref(false)
@@ -279,6 +280,19 @@ const formatDateForInput = (dateString) => {
   return date.toISOString().split('T')[0]
 }
 
+const handleSendVerificationEmail = async () => {
+  sendingVerification.value = true
+  try {
+    await sendVerificationEmail()
+    showMessage('Письмо с подтверждением отправлено на ваш email')
+  } catch (error) {
+    console.error('Error sending verification email:', error)
+    showMessage(getErrorMessage(error, 'Ошибка при отправке письма'), true)
+  } finally {
+    sendingVerification.value = false
+  }
+}
+
 onMounted(async () => {
   await loadProfile()
   await loadDocument()
@@ -312,6 +326,37 @@ onMounted(async () => {
 
       <!-- Profile Content -->
       <div v-else class="space-y-6">
+        <!-- Email Verification Warning -->
+        <div v-if="user && !user.emailVerified" class="bg-amber-50 border-l-4 border-amber-400 rounded-lg p-4 flex items-start gap-3 shadow-sm">
+          <div class="flex-shrink-0">
+            <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-amber-900 mb-1">
+              Подтвердите ваш email
+            </h3>
+            <p class="text-sm text-amber-800 mb-3">
+              Для безопасного пользования сайтом и доступа ко всем функциям, пожалуйста, подтвердите ваш email адрес <span class="font-semibold">{{ user.email }}</span>
+            </p>
+            <button
+              @click="handleSendVerificationEmail"
+              :disabled="sendingVerification"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="sendingVerification" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              {{ sendingVerification ? 'Отправка...' : 'Подтвердить почту' }}
+            </button>
+          </div>
+        </div>
+
         <!-- Success Message -->
         <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
           <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -761,6 +806,15 @@ onMounted(async () => {
 
         <!-- Actions -->
         <div class="flex gap-3">
+          <router-link
+            to="/statistics"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Моя статистика
+          </router-link>
           <Button variant="outline" @click="logout" class="ml-auto">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

@@ -1,6 +1,23 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div class="w-full max-w-5xl">
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Decorative background -->
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute top-0 left-0 w-96 h-96 bg-primary-200 rounded-full blur-3xl opacity-20"></div>
+      <div class="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full blur-3xl opacity-20"></div>
+    </div>
+
+    <!-- Back to catalog button -->
+    <button
+      @click="goToCatalog"
+      class="absolute top-6 left-6 z-20 flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 group border border-gray-200"
+    >
+      <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      <span class="font-medium">К каталогу</span>
+    </button>
+
+    <div class="w-full max-w-5xl relative z-10">
       <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
         <div class="flex flex-col md:flex-row" style="min-height: 650px;">
           
@@ -101,7 +118,16 @@
                     </button>
                   </form>
 
-                  <div class="text-center mt-6">
+                  <div class="text-center mt-4">
+                    <button
+                      @click="showForgotPasswordModal = true"
+                      class="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                    >
+                      Забыли пароль?
+                    </button>
+                  </div>
+
+                  <div class="text-center mt-4">
                     <p class="text-sm text-gray-600">
                       Нет аккаунта? 
                       <button @click="switchTab('register')" class="text-primary-600 hover:text-primary-700 font-semibold transition-colors">
@@ -342,6 +368,84 @@
         </div>
       </div>
     </div>
+
+    <!-- Forgot Password Modal -->
+    <Transition name="fade">
+      <div v-if="showForgotPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 relative" @click.stop>
+          <button
+            @click="closeForgotPasswordModal"
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary-100 mb-4">
+              <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900">Восстановление пароля</h3>
+            <p class="mt-2 text-sm text-gray-600">Введите email для получения ссылки</p>
+          </div>
+
+          <Transition name="fade-scale">
+            <div v-if="resetEmailSent" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mb-4">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span>Письмо отправлено! Проверьте почту.</span>
+              </div>
+            </div>
+          </Transition>
+
+          <Transition name="fade-scale">
+            <div v-if="authStore.error && !resetEmailSent" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-4">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+                <span>{{ authStore.error }}</span>
+              </div>
+            </div>
+          </Transition>
+
+          <form @submit.prevent="handleForgotPassword" class="space-y-4">
+            <div>
+              <label for="reset-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input
+                id="reset-email"
+                v-model="resetEmail"
+                type="email"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                placeholder="your@email.com"
+                :disabled="resetEmailSending || resetEmailSent"
+              />
+            </div>
+
+            <button
+              type="submit"
+              :disabled="resetEmailSending || resetEmailSent"
+              class="w-full inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md px-6 py-3"
+            >
+              <span v-if="resetEmailSending" class="flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Отправка...
+              </span>
+              <span v-else>Отправить</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -359,6 +463,10 @@ const registerSuccess = ref(false)
 const showLoginPassword = ref(false)
 const showRegPassword = ref(false)
 const showRegConfirmPassword = ref(false)
+const showForgotPasswordModal = ref(false)
+const resetEmail = ref('')
+const resetEmailSending = ref(false)
+const resetEmailSent = ref(false)
 
 const loginForm = ref({
   username: '',
@@ -377,6 +485,10 @@ const switchTab = (tab) => {
   authStore.clearError()
   registerSuccess.value = false
   activeTab.value = tab
+}
+
+const goToCatalog = () => {
+  router.push({ name: 'Home' })
 }
 
 const handleLogin = async () => {
@@ -430,6 +542,49 @@ const handleRegister = async () => {
     // Error set by store
   }
 }
+
+const handleForgotPassword = async () => {
+  console.log('[AuthView] handleForgotPassword вызван')
+  console.log('[AuthView] resetEmail.value:', resetEmail.value)
+  console.log('[AuthView] resetEmail.value.trim():', resetEmail.value.trim())
+  
+  if (!resetEmail.value.trim()) {
+    console.log('[AuthView] Email пустой, показываем ошибку')
+    authStore.error = 'Введите email'
+    return
+  }
+
+  resetEmailSending.value = true
+  authStore.clearError()
+  
+  console.log('[AuthView] Отправка запроса с email:', resetEmail.value)
+
+  try {
+    const { requestPasswordReset } = await import('../services/authService')
+    await requestPasswordReset(resetEmail.value)
+    console.log('[AuthView] Запрос успешно выполнен')
+    resetEmailSent.value = true
+    setTimeout(() => {
+      showForgotPasswordModal.value = false
+      resetEmail.value = ''
+      resetEmailSent.value = false
+    }, 3000)
+  } catch (error) {
+    console.error('[AuthView] Ошибка при отправке:', error)
+    console.error('[AuthView] Ответ сервера:', error.response?.data)
+    authStore.error = error.response?.data?.message || 'Ошибка при отправке письма'
+  } finally {
+    resetEmailSending.value = false
+  }
+}
+
+const closeForgotPasswordModal = () => {
+  showForgotPasswordModal.value = false
+  resetEmail.value = ''
+  resetEmailSent.value = false
+  authStore.clearError()
+}
+
 </script>
 
 <style scoped>

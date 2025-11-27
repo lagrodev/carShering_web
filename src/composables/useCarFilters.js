@@ -17,12 +17,17 @@ export function useCarFilters() {
     const bodyType = ref('')
     const minYear = ref(null)
     const maxYear = ref(null)
+    const dateStart = ref('')
+    const dateEnd = ref('')
+    const minCell = ref(null)
+    const maxCell = ref(null)
 
     // Уникальные значения
     const allBrands = ref([])
     const allModels = ref([])
     const allClasses = ref([])
     const allBodyTypes = ref([])
+    const minMaxCell = ref({ min: 0, max: 100000 })
 
     // Загрузка опций
     const loadFilterOptions = async () => {
@@ -43,8 +48,32 @@ export function useCarFilters() {
             allModels.value = modelsRes.data.sort()
             allClasses.value = classesRes.data.sort()
             allBodyTypes.value = bodyTypesRes.data.sort()
+            
+            // Загружаем min/max цены
+            await loadMinMaxCell()
         } catch (e) {
             console.error('Не удалось загрузить фильтры', e)
+        }
+    }
+
+    // Загрузка min/max цены с учетом текущих фильтров
+    const loadMinMaxCell = async () => {
+        try {
+            const params = {}
+            if (brandInput.value.length) params.brand = brandInput.value.join(',')
+            if (modelInput.value.length) params.model = modelInput.value.join(',')
+            if (classInput.value.length) params.car_class = classInput.value.join(',')
+            if (bodyType.value) params.body_type = bodyType.value
+            if (minYear.value) params.minYear = minYear.value
+            if (maxYear.value) params.maxYear = maxYear.value
+            if (dateStart.value) params.date_start = dateStart.value
+            if (dateEnd.value) params.date_end = dateEnd.value
+
+            const res = await api.get('/car/filters/min-max-cell', { params })
+            minMaxCell.value = res.data
+        } catch (e) {
+            console.error('Не удалось загрузить диапазон цен', e)
+            minMaxCell.value = { min: 0, max: 100000 }
         }
     }
 
@@ -73,12 +102,15 @@ export function useCarFilters() {
     const saveFiltersToStorage = () => {
         const filters = {
             brand: brandInput.value,
-
             model: modelInput.value,
             carClass: classInput.value,
             bodyType: bodyType.value,
             minYear: minYear.value,
-            maxYear: maxYear.value
+            maxYear: maxYear.value,
+            dateStart: dateStart.value,
+            dateEnd: dateEnd.value,
+            minCell: minCell.value,
+            maxCell: maxCell.value
         }
         localStorage.setItem('carFilters', JSON.stringify(filters))
     }
@@ -101,6 +133,10 @@ export function useCarFilters() {
         bodyType.value = filters.bodyType || ''
         minYear.value = filters.minYear || null
         maxYear.value = filters.maxYear || null
+        dateStart.value = filters.dateStart || ''
+        dateEnd.value = filters.dateEnd || ''
+        minCell.value = filters.minCell || null
+        maxCell.value = filters.maxCell || null
     }
 
     const resetFilters = () => {
@@ -110,6 +146,10 @@ export function useCarFilters() {
         bodyType.value = ''
         minYear.value = null
         maxYear.value = null
+        dateStart.value = ''
+        dateEnd.value = ''
+        minCell.value = null
+        maxCell.value = null
         localStorage.removeItem('carFilters')
     }
 
@@ -119,9 +159,12 @@ export function useCarFilters() {
         brandInput, modelInput, classInput,
         brandQuery, modelQuery, classQuery,
         bodyType, minYear, maxYear,
+        dateStart, dateEnd, minCell, maxCell,
         allBrands, allModels, allClasses, allBodyTypes,
+        minMaxCell,
         filteredBrands, filteredModels, filteredClasses,
         loadFilterOptions,
+        loadMinMaxCell,
         saveFiltersToStorage,
         loadFiltersFromStorage,
         resetFilters,

@@ -79,8 +79,7 @@
       </div>
 
       <div class="flex gap-3">
-        <Button variant="primary" @click="loadContracts()">Применить фильтры</Button>
-        <Button variant="outline" @click="resetFilters">Сбросить</Button>
+        <Button variant="outline" @click="resetFilters">Сбросить фильтры</Button>
       </div>
     </Card>
 
@@ -159,7 +158,7 @@
             <div class="flex items-center gap-2 pt-2" @click.stop>
               <button
                 v-if="contract.state === 'PENDING'"
-                @click="confirmContract(contract.id)"
+                @click="handleConfirmContract(contract.id)"
                 class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,7 +168,7 @@
               </button>
               <button
                 v-if="contract.state === 'CANCELLATION_REQUESTED'"
-                @click="confirmCancellation(contract.id)"
+                @click="handleConfirmCancellation(contract.id)"
                 class="px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-1"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,8 +177,8 @@
                 Подтвердить отмену
               </button>
               <button
-                v-if="contract.state === 'ACTIVE' || contract.state === 'PENDING'"
-                @click="cancelContract(contract.id)"
+                v-if="contract.state === 'PENDING'"
+                @click="handleCancelContract(contract.id)"
                 class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,11 +221,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getErrorMessage } from '../../utils/errorHandler'
 import { useNotification } from '../../composables/useNotification'
-import api from '../../services/api'
+import { getBodyTypes, getClasses } from '../../services/carService'
+import { getAdminContracts, confirmContract, cancelAdminContract, confirmCancellation } from '../../services/adminService'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 
@@ -250,14 +250,19 @@ const filters = ref({
   carClass: ''
 })
 
+// Автоматическое применение фильтров при их изменении
+watch(filters, () => {
+  loadContracts(0)
+}, { deep: true })
+
 const loadFilterOptions = async () => {
   try {
-    const [bodyTypesRes, classesRes] = await Promise.all([
-      api.get('/car/filters/body-types'),
-      api.get('/car/filters/classes')
+    const [bodyTypes, classes] = await Promise.all([
+      getBodyTypes(),
+      getClasses()
     ])
-    allBodyTypes.value = bodyTypesRes.data
-    allClasses.value = classesRes.data
+    allBodyTypes.value = bodyTypes
+    allClasses.value = classes
   } catch (error) {
     console.error('Не удалось загрузить опции фильтров:', error)
   }
@@ -278,10 +283,10 @@ const loadContracts = async (page = 0) => {
     if (filters.value.bodyType) params.body_type = filters.value.bodyType
     if (filters.value.carClass) params.car_class = filters.value.carClass
     
-    const response = await api.get('/admin/contracts', { params })
-    contracts.value = response.data.content || []
-    currentPage.value = response.data.page?.number || 0
-    totalPages.value = response.data.page?.totalPages || 0
+    const response = await getAdminContracts(params)
+    contracts.value = response.content || []
+    currentPage.value = response.page?.number || 0
+    totalPages.value = response.page?.totalPages || 0
   } catch (error) {
     console.error('Error loading contracts:', error)
     showNotification({
@@ -337,7 +342,7 @@ const viewContract = (contractId) => {
   router.push({ name: 'AdminContractDetails', params: { id: contractId } })
 }
 
-const confirmContract = async (contractId) => {
+const handleConfirmContract = async (contractId) => {
   const confirmed = await showConfirm({
     type: 'info',
     title: 'Подтверждение контракта',
@@ -347,7 +352,7 @@ const confirmContract = async (contractId) => {
   if (!confirmed) return
   
   try {
-    await api.patch(`/admin/contracts/${contractId}/confirm`)
+    await confirmContract(contractId)
     await loadContracts(currentPage.value)
     showNotification({
       type: 'success',
@@ -361,7 +366,7 @@ const confirmContract = async (contractId) => {
   }
 }
 
-const cancelContract = async (contractId) => {
+const handleCancelContract = async (contractId) => {
   const confirmed = await showConfirm({
     type: 'error',
     title: 'Отмена контракта',
@@ -371,7 +376,7 @@ const cancelContract = async (contractId) => {
   if (!confirmed) return
   
   try {
-    await api.delete(`/admin/contracts/${contractId}/cancel`)
+    await cancelAdminContract(contractId)
     await loadContracts(currentPage.value)
     showNotification({
       type: 'success',
@@ -385,7 +390,7 @@ const cancelContract = async (contractId) => {
   }
 }
 
-const confirmCancellation = async (contractId) => {
+const handleConfirmCancellation = async (contractId) => {
   const confirmed = await showConfirm({
     type: 'warning',
     title: 'Подтверждение отмены',
@@ -395,7 +400,7 @@ const confirmCancellation = async (contractId) => {
   if (!confirmed) return
   
   try {
-    await api.patch(`/admin/contracts/contracts/${contractId}/confirm-cancellation`)
+    await confirmCancellation(contractId)
     await loadContracts(currentPage.value)
     showNotification({
       type: 'success',

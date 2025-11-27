@@ -11,19 +11,32 @@ export function useCars(itemsPerPage, filterRef) {
     const loadCars = async (page) => {
         loading.value = true
         try {
+            const filters = unref(filterRef)
             const params = {
                 page,
                 size: unref(itemsPerPage),
-                sort: 'id',
-                ...unref(filterRef)
+                ...filters
             }
+            
             const res = await api.get('/car/catalogue', { params })
-
-            cars.value = res.data.content
-            totalPages.value = res.data.page.totalPages  // ← было: res.data.totalPages
-            currentPage.value = res.data.page.number     // ← лучше брать из ответа
+            
+            // Парсим новую структуру с вложенным page объектом
+            if (res.data.content && Array.isArray(res.data.content)) {
+                cars.value = res.data.content
+                // Проверяем новую структуру с page объектом
+                if (res.data.page) {
+                    totalPages.value = res.data.page.totalPages || 0
+                    currentPage.value = res.data.page.number || 0
+                } else {
+                    // Старая структура (прямо на верхнем уровне)
+                    totalPages.value = res.data.totalPages || 0
+                    currentPage.value = res.data.number || 0
+                }
+            } else {
+                cars.value = []
+                totalPages.value = 0
+            }
         } catch (e) {
-            console.error('Ошибка загрузки машин', e)
             cars.value = []
             totalPages.value = 0
         } finally {
@@ -31,14 +44,17 @@ export function useCars(itemsPerPage, filterRef) {
         }
     }
 
-    // Загружать при изменении фильтров И сразу при старте
+    // Загружать при изменении фильтров (без immediate, чтобы не было двойной загрузки)
     watch(
         filterRef,
         () => {
             loadCars(0)
         },
-        { deep: true, immediate: true } // ← immediate: true вместо отдельного вызова
+        { deep: true }
     )
+
+    // Первая загрузка
+    loadCars(0)
 
     const goToPage = (page) => {
         loadCars(page)

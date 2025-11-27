@@ -21,30 +21,26 @@ const loading = ref(false)
 const loadingCar = ref(true)
 const error = ref('')
 
-// Вспомогательная функция: безопасное сравнение дат без часовых поясов
-const parseDate = (dateStr) => {
-  const [year, month, day] = dateStr.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, day))
+// Вспомогательная функция: безопасное сравнение дат с временем
+const parseDateTime = (dateStr) => {
+  return new Date(dateStr)
 }
 
-// Сегодня и максимум — ровно через 365 дней
+// Сегодня и максимум — ровно через 365 дней (с временем)
 const today = new Date()
 const maxDateGlobal = new Date(today)
-maxDateGlobal.setFullYear(today.getFullYear() + 1) // точнее, чем +365 дней
-// Убираем время для чистого сравнения
-today.setHours(0, 0, 0, 0)
-maxDateGlobal.setHours(0, 0, 0, 0)
+maxDateGlobal.setFullYear(today.getFullYear() + 1)
 
-const todayStr = today.toISOString().slice(0, 10)
-const maxDateStr = maxDateGlobal.toISOString().slice(0, 10)
+const todayStr = today.toISOString().slice(0, 16)
+const maxDateStr = maxDateGlobal.toISOString().slice(0, 16)
 
 // Макс. дата окончания: start + 7 дней, но не позже maxDateGlobal
 const maxEndDate = computed(() => {
   if (!dataStart.value) return maxDateStr
-  const start = parseDate(dataStart.value)
+  const start = parseDateTime(dataStart.value)
   const endLimit = new Date(start)
   endLimit.setDate(start.getDate() + 7)
-  return (endLimit > maxDateGlobal ? maxDateGlobal : endLimit).toISOString().slice(0, 10)
+  return (endLimit > maxDateGlobal ? maxDateGlobal : endLimit).toISOString().slice(0, 16)
 })
 
 // Мин. дата окончания — дата начала
@@ -52,7 +48,7 @@ const minEndDate = computed(() => dataStart.value || todayStr)
 
 // Автоматически корректируем dataEnd, если он стал меньше dataStart
 watch(dataStart, (newStart) => {
-  if (newStart && dataEnd.value && parseDate(dataEnd.value) < parseDate(newStart)) {
+  if (newStart && dataEnd.value && parseDateTime(dataEnd.value) < parseDateTime(newStart)) {
     dataEnd.value = newStart
   }
 })
@@ -63,8 +59,8 @@ const validation = computed(() => {
     return { valid: false, message: 'Укажите обе даты аренды' }
   }
 
-  const start = parseDate(dataStart.value)
-  const end = parseDate(dataEnd.value)
+  const start = parseDateTime(dataStart.value)
+  const end = parseDateTime(dataEnd.value)
 
   if (start < today || end < today) {
     return { valid: false, message: 'Дата не может быть в прошлом' }
@@ -130,15 +126,24 @@ const goBack = () => {
   router.push(`/car/${carId.value}`)
 }
 
-// Вычисляем длительность аренды в днях
+// Вычисляем длительность аренды в часах и днях
 const rentalDuration = computed(() => {
   if (!dataStart.value || !dataEnd.value) return 0
-  const start = parseDate(dataStart.value)
-  const end = parseDate(dataEnd.value)
+  const start = parseDateTime(dataStart.value)
+  const end = parseDateTime(dataEnd.value)
+  const hours = Math.ceil((end - start) / (1000 * 60 * 60))
+  return hours
+})
+
+// Вычисляем длительность в днях для отображения
+const rentalDurationDays = computed(() => {
+  if (!dataStart.value || !dataEnd.value) return 0
+  const start = parseDateTime(dataStart.value)
+  const end = parseDateTime(dataEnd.value)
   return Math.ceil((end - start) / (1000 * 60 * 60 * 24))
 })
 
-// Вычисляем общую стоимость
+// Вычисляем общую стоимость (цена за час * количество часов)
 const totalCost = computed(() => {
   if (!car.value || rentalDuration.value === 0) return 0
   return (car.value.rent * rentalDuration.value).toFixed(2)
@@ -189,7 +194,7 @@ const totalCost = computed(() => {
               <!-- Date Start -->
               <div class="space-y-2">
                 <label for="start-date" class="block text-sm font-medium text-gray-700">
-                  Дата начала аренды
+                  Дата и время начала аренды
                 </label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -199,14 +204,14 @@ const totalCost = computed(() => {
                   </div>
                   <input
                     id="start-date"
-                    type="date"
+                    type="datetime-local"
                     v-model="dataStart"
                     :min="todayStr"
                     :max="maxDateStr"
                     class="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                     :class="{ 
                       'border-gray-300': validation.valid || !dataStart,
-                      'border-red-300 bg-red-50': !validation.valid && dataStart && parseDate(dataStart) < today
+                      'border-red-300 bg-red-50': !validation.valid && dataStart && parseDateTime(dataStart) < today
                     }"
                   />
                 </div>
@@ -215,7 +220,7 @@ const totalCost = computed(() => {
               <!-- Date End -->
               <div class="space-y-2">
                 <label for="end-date" class="block text-sm font-medium text-gray-700">
-                  Дата окончания аренды
+                  Дата и время окончания аренды
                 </label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -225,7 +230,7 @@ const totalCost = computed(() => {
                   </div>
                   <input
                     id="end-date"
-                    type="date"
+                    type="datetime-local"
                     v-model="dataEnd"
                     :min="minEndDate"
                     :max="maxEndDate"
@@ -238,7 +243,7 @@ const totalCost = computed(() => {
                   />
                 </div>
                 <p v-if="!dataStart" class="text-sm text-gray-500 mt-1">
-                  Сначала выберите дату начала аренды
+                  Сначала выберите дату и время начала аренды
                 </p>
               </div>
 
@@ -315,7 +320,7 @@ const totalCost = computed(() => {
               
               <div v-if="rentalDuration > 0" class="flex justify-between items-center text-sm">
                 <span class="text-gray-600">Длительность:</span>
-                <span class="font-semibold text-gray-900">{{ rentalDuration }} {{ rentalDuration === 1 ? 'день' : rentalDuration < 5 ? 'дня' : 'дней' }}</span>
+                <span class="font-semibold text-gray-900">{{ rentalDuration }} {{ rentalDuration === 1 ? 'час' : rentalDuration < 5 ? 'часа' : 'часов' }} ({{ rentalDurationDays }} {{ rentalDurationDays === 1 ? 'день' : rentalDurationDays < 5 ? 'дня' : 'дней' }})</span>
               </div>
             </div>
 

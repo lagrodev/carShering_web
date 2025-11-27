@@ -151,7 +151,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { getErrorMessage } from '../../utils/errorHandler'
-import api from '../../services/api'
+import { getAdminBrands, getAdminModelNames, getAdminClasses, createBrand, createModelName, createClass } from '../../services/adminService'
 
 const brands = ref([])
 const modelNames = ref([])
@@ -173,15 +173,14 @@ const modalTitle = computed(() => {
 
 const loadFilters = async () => {
   try {
-    // Load all filters from separate endpoints
-    const [brandsRes, modelsRes, classesRes] = await Promise.all([
-      api.get('/car/filters/brands'),
-      api.get('/car/filters/models'),
-      api.get('/car/filters/classes')
+    const [brandsData, modelsData, classesData] = await Promise.all([
+      getAdminBrands(),
+      getAdminModelNames(),
+      getAdminClasses()
     ])
-    brands.value = brandsRes.data || []
-    modelNames.value = modelsRes.data || []
-    carClasses.value = classesRes.data || []
+    brands.value = brandsData || []
+    modelNames.value = modelsData || []
+    carClasses.value = classesData || []
   } catch (err) {
     console.error('Error loading filters:', err)
   }
@@ -206,20 +205,17 @@ const handleAdd = async () => {
   error.value = ''
 
   try {
-    let endpoint = ''
     switch (currentType.value) {
       case 'brand':
-        endpoint = '/admin/filters/brands'
+        await createBrand(newName.value)
         break
       case 'model':
-        endpoint = '/admin/filters/models'
+        await createModelName(newName.value)
         break
       case 'class':
-        endpoint = '/admin/filters/classes'
+        await createClass(newName.value)
         break
     }
-
-    await api.post(endpoint, { name: newName.value })
     await loadFilters()
     closeAddModal()
   } catch (err) {

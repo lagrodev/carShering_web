@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotification } from '../composables/useNotification'
+import { useFavorites } from '../composables/useFavorites'
 import api from '../services/api'
 import Header from '../components/layout/Header.vue'
 import Footer from '../components/layout/Footer.vue'
@@ -9,41 +10,56 @@ import Button from '../components/ui/Button.vue'
 
 const props = defineProps(['id'])
 const { showNotification } = useNotification()
+const { toggleFavorite } = useFavorites()
 const car = ref(null)
 const isAuthenticated = ref(false)
 const loading = ref(true)
-const loadingAuth = ref(true)
+const isFavorite = ref(false)
 
 const router = useRouter()
 
-const checkAuth = async () => {
-  try {
-    await api.get('/profile')
-    isAuthenticated.value = true
-  } catch (error) {
-    if (error.response?.status === 401) {
-      isAuthenticated.value = false
-    } else {
-      console.error('Auth check error:', error)
-    }
-  } finally {
-    loadingAuth.value = false
+const handleToggleFavorite = async () => {
+  if (!isAuthenticated.value) {
+    showNotification({
+      type: 'error',
+      message: 'Войдите в систему, чтобы добавить автомобиль в избранное'
+    })
+    return
+  }
+
+  const success = await toggleFavorite(props.id, isFavorite.value)
+  
+  if (success) {
+    isFavorite.value = !isFavorite.value
+    showNotification({
+      type: 'success',
+      message: isFavorite.value ? 'Добавлено в избранное' : 'Удалено из избранного'
+    })
   }
 }
 
 onMounted(async () => {
-  console.log('Загрузка автомобиля с ID:', props.id)
   try {
     const response = await api.get(`/car/${props.id}`)
-    console.log('Ответ от API:', response.data)
     car.value = response.data
-    await checkAuth()
+    
+    // Используем поле favorite из ответа API
+    isFavorite.value = response.data.favorite || false
+    
+    // Проверяем авторизацию через /profile/me
+    try {
+      await api.get('/profile/me')
+      isAuthenticated.value = true
+    } catch (authError) {
+      isAuthenticated.value = false
+    }
   } catch (error) {
-    console.error('Ошибка загрузки авто:', error)
     showNotification({
       type: 'error',
-      message: 'Ошибка загрузки данных автомобиля: ' + (error.message || 'неизвестная ошибка')
+      message: 'Не удалось загрузить информацию об автомобиле'
     })
+    car.value = null
+    isAuthenticated.value = false
   } finally {
     loading.value = false
   }
@@ -95,7 +111,7 @@ const goBack = () => {
         <!-- Image Section -->
         <div class="relative bg-gradient-to-br from-primary-100 to-purple-100 aspect-video md:aspect-[21/9]">
           <img
-            src="../assets/images/blue-car.png"
+            :src="car.imageUrl || '../assets/images/blue-car.png'"
             :alt="`${car.brand} ${car.model}`"
             class="w-full h-full object-contain p-8"
           />
@@ -112,6 +128,25 @@ const goBack = () => {
               {{ car.status === 'AVAILABLE' ? 'Доступен' : 'Недоступен' }}
             </span>
           </div>
+          
+          <!-- Favorite Button -->
+          <button
+            v-if="isAuthenticated"
+            @click="handleToggleFavorite"
+            class="absolute bottom-6 right-6 p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            :class="{ 'animate-pulse': isFavorite }"
+          >
+            <svg 
+              class="w-6 h-6 transition-all duration-200" 
+              :class="isFavorite ? 'text-red-500 fill-current' : 'text-gray-400'"
+              fill="none" 
+              :fill="isFavorite ? 'currentColor' : 'none'"
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
         </div>
 
         <!-- Content Section -->
@@ -206,7 +241,7 @@ const goBack = () => {
               <div class="flex flex-col gap-3">
                 <!-- Authenticated User: Rent Button -->
                 <Button
-                  v-if="isAuthenticated && !loadingAuth"
+                  v-if="isAuthenticated"
                   variant="primary"
                   size="lg"
                   @click="handleRentClick"
@@ -219,7 +254,7 @@ const goBack = () => {
                 </Button>
 
                 <!-- Guest User: Auth Message -->
-                <div v-else-if="!loadingAuth" class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                <div v-else class="bg-amber-50 border border-amber-200 rounded-xl p-6">
                   <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
                       <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,18 +279,24 @@ const goBack = () => {
                     </div>
                   </div>
                 </div>
-
-                <!-- Loading State -->
-                <div v-else class="flex items-center justify-center py-4">
-                  <svg class="animate-spin h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </main>
+
+    <!-- Error State -->
+    <main v-else-if="!loading && !car" class="flex-1 flex items-center justify-center" style="min-height: 600px;">
+      <div class="text-center">
+        <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Автомобиль не найден</h3>
+        <p class="text-gray-600 mb-6">Не удалось загрузить информацию об автомобиле</p>
+        <Button variant="primary" @click="goBack">
+          Вернуться к каталогу
+        </Button>
       </div>
     </main>
 

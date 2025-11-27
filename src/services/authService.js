@@ -23,6 +23,15 @@ export const register = async (userData) => {
 }
 
 /**
+ * Обновить access token используя refresh token
+ * @returns {Promise<void>}
+ */
+export const refreshToken = async () => {
+    const response = await api.post('/refresh')
+    return response.data
+}
+
+/**
  * Выход из системы
  * @returns {Promise<void>}
  */
@@ -51,4 +60,33 @@ export const checkAuth = async () => {
     } catch {
         return false
     }
+}
+
+/**
+ * Запросить сброс пароля
+ * @param {string} email - email пользователя
+ * @returns {Promise<void>}
+ */
+export const requestPasswordReset = async (email) => {
+    console.log('[authService] Запрос сброса пароля для email:', email)
+    const response = await api.post('/reset-password', { email })
+    console.log('[authService] Ответ от сервера:', response.data)
+    return response.data
+}
+
+/**
+ * Сбросить пароль с кодом
+ * @param {string} code - код сброса пароля
+ * @param {string} newPassword - новый пароль
+ * @returns {Promise<void>}
+ */
+export const resetPassword = async (code, newPassword) => {
+    console.log('[authService] Запрос сброса пароля с code:', code)
+    console.log('[authService] Новый пароль (длина):', newPassword.length)
+    const response = await api.post('/reset', 
+        { password: newPassword },
+        { params: { code } }
+    )
+    console.log('[authService] Ответ от сервера:', response.data)
+    return response.data
 }

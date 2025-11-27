@@ -2,11 +2,12 @@ import api from './api.js'
 
 /**
  * Получить список договоров пользователя
+ * @param {Object} params - параметры пагинации
+ * @returns {Promise<Object>}
  */
-export async function getUserContracts() {
+export async function getUserContracts(params = {}) {
   try {
-    const response = await api.get('/contracts')
-    // API возвращает объект с полем content, которое содержит массив
+    const response = await api.get('/contracts', { params })
     return response.data.content || response.data || []
   } catch (error) {
     console.error('Error fetching contracts:', error)
@@ -16,6 +17,8 @@ export async function getUserContracts() {
 
 /**
  * Получить детали договора по ID
+ * @param {number} id - ID договора
+ * @returns {Promise<Object>}
  */
 export async function getContractById(id) {
   try {
@@ -29,10 +32,18 @@ export async function getContractById(id) {
 
 /**
  * Создать новый договор
+ * @param {Object} contractData - { carId, dataStart, dataEnd }
+ * @returns {Promise<Object>}
  */
 export async function createContract(contractData) {
   try {
-    const response = await api.post('/contracts', contractData)
+    // Преобразуем даты в формат ISO 8601 для LocalDateTime
+    const payload = {
+      carId: contractData.carId,
+      dataStart: contractData.dataStart, // datetime-local уже в формате ISO
+      dataEnd: contractData.dataEnd
+    }
+    const response = await api.post('/contracts', payload)
     return response.data
   } catch (error) {
     console.error('Error creating contract:', error)
@@ -41,24 +52,19 @@ export async function createContract(contractData) {
 }
 
 /**
- * Обновить статус договора
- */
-export async function updateContractStatus(id, status) {
-  try {
-    const response = await api.patch(`/contracts/${id}/status`, { status })
-    return response.data
-  } catch (error) {
-    console.error('Error updating contract status:', error)
-    throw error
-  }
-}
-
-/**
  * Обновить даты договора
+ * @param {number} id - ID договора
+ * @param {Object} data - { dataStart, dataEnd }
+ * @returns {Promise<Object>}
  */
 export async function updateContract(id, data) {
   try {
-    const response = await api.patch(`/contracts/${id}`, data)
+    // Преобразуем даты в формат ISO 8601 для LocalDateTime
+    const payload = {
+      dataStart: data.dataStart,
+      dataEnd: data.dataEnd
+    }
+    const response = await api.patch(`/contracts/${id}`, payload)
     return response.data
   } catch (error) {
     console.error('Error updating contract:', error)
@@ -67,7 +73,9 @@ export async function updateContract(id, data) {
 }
 
 /**
- * Отменить договор
+ * Отменить договор пользователем
+ * @param {number} id - ID договора
+ * @returns {Promise<void>}
  */
 export async function cancelContract(id) {
   try {

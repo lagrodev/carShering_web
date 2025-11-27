@@ -139,7 +139,7 @@
 import { ref, onMounted } from 'vue'
 import { getErrorMessage } from '../../utils/errorHandler'
 import { useNotification } from '../../composables/useNotification'
-import api from '../../services/api'
+import { getAdminDocuments, verifyDocument as verifyDocumentService } from '../../services/adminService'
 import Card from '../ui/Card.vue'
 
 const { showNotification, showConfirm } = useNotification()
@@ -159,12 +159,11 @@ const loadDocuments = async (page = 0) => {
       size: 20
     }
     
-    const response = await api.get('/admin/documents', { params })
+    const response = await getAdminDocuments(params)
     
-    // Backend возвращает формат: { content: [...], page: { size, number, totalElements, totalPages } }
-    documents.value = response.data.content || []
-    currentPage.value = response.data.page?.number || 0
-    totalPages.value = response.data.page?.totalPages || 0
+    documents.value = response.content || []
+    currentPage.value = response.page?.number || 0
+    totalPages.value = response.page?.totalPages || 0
   } catch (error) {
     console.error('Error loading documents:', error)
     showNotification({
@@ -190,7 +189,7 @@ const verifyDocument = async (documentId) => {
   if (!confirmed) return
   
   try {
-    await api.patch(`/admin/documents/${documentId}/verify`)
+    await verifyDocumentService(documentId)
     await loadDocuments(currentPage.value)
     showNotification({
       type: 'success',

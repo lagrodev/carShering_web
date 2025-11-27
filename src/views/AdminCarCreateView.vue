@@ -21,8 +21,23 @@ const form = ref({
   gosNumber: '',
   vin: '',
   rent: 0,
-  status: 'AVAILABLE'
+  stateId: ''
 })
+
+const imageFile = ref(null)
+const imagePreview = ref(null)
+
+const handleImageChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    imageFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
 
 const loadOptions = async () => {
   loading.value = true
@@ -31,8 +46,8 @@ const loadOptions = async () => {
       api.get('/admin/cars/state'),
       api.get('/admin/models', { params: { size: 1000 } })
     ])
-    // Состояния приходят как массив объектов {id, status}, извлекаем только status
-    allCarStates.value = statesRes.data.map(state => state.status)
+    // Состояния приходят как массив объектов {id, status}
+    allCarStates.value = statesRes.data
     allModels.value = modelsRes.data.content
   } catch (error) {
     console.error('Ошибка загрузки опций:', error)
@@ -79,6 +94,14 @@ const createCar = async () => {
     return
   }
   
+  if (!imageFile.value) {
+    showNotification({
+      type: 'warning',
+      message: 'Выберите изображение автомобиля'
+    })
+    return
+  }
+  
   console.log('✅ Все валидации пройдены, отправка на сервер...')
   
   // Подготовка данных - конвертируем строковые числа в числа
@@ -88,12 +111,20 @@ const createCar = async () => {
     gosNumber: form.value.gosNumber.trim(),
     vin: form.value.vin.trim(),
     rent: Number(form.value.rent),
-    status: form.value.status
+    stateId: Number(form.value.stateId)
   }
   
   saving.value = true
   try {
-    await api.post('/admin/cars', carData)
+    const formData = new FormData()
+    formData.append('car', new Blob([JSON.stringify(carData)], { type: 'application/json' }))
+    formData.append('image', imageFile.value)
+    
+    await api.post('/admin/cars', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
     showNotification({
       type: 'success',
       message: 'Автомобиль успешно создан'
@@ -225,17 +256,54 @@ onMounted(() => {
           <!-- Status -->
           <div class="space-y-2">
             <label class="block text-sm font-medium text-gray-700">
-              Статус <span class="text-red-500">*</span>
+              Состояние <span class="text-red-500">*</span>
             </label>
             <select
-              v-model="form.status"
+              v-model.number="form.stateId"
               required
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
             >
-              <option v-for="state in allCarStates" :key="state" :value="state">
-                {{ state }}
+              <option value="" disabled>Выберите состояние</option>
+              <option v-for="state in allCarStates" :key="state.id" :value="state.id">
+                {{ state.status }}
               </option>
             </select>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">
+              Изображение автомобиля <span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center gap-4">
+              <div v-if="imagePreview" class="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200">
+                <img :src="imagePreview" alt="Preview" class="w-full h-full object-cover" />
+                <button
+                  @click="imageFile = null; imagePreview = null"
+                  type="button"
+                  class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div class="flex-1">
+                <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span class="text-sm text-gray-700">{{ imageFile ? 'Изменить фото' : 'Выбрать фото' }}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    @change="handleImageChange"
+                    class="hidden"
+                  />
+                </label>
+                <p class="text-xs text-gray-500 mt-1">JPG, PNG или GIF (макс. 10MB)</p>
+              </div>
+            </div>
           </div>
 
           <!-- Action Buttons -->

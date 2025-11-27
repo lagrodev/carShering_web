@@ -41,6 +41,29 @@
             Мои договоры
           </router-link>
 
+          <!-- Favorites Link (with guest protection) -->
+          <button
+            v-if="!authStore.isAuthenticated"
+            @click="showGuestMessage('favorites')"
+            class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            Избранное
+          </button>
+          <router-link 
+            v-else
+            to="/favorites" 
+            class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center gap-2"
+            active-class="text-red-600 bg-red-50"
+          >
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            Избранное
+          </router-link>
+
           <!-- Guest: Login Button -->
           <router-link 
             v-if="!authStore.isAuthenticated"
@@ -108,6 +131,17 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     Мой профиль
+                  </router-link>
+
+                  <router-link
+                    to="/statistics"
+                    @click="isDropdownOpen = false"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-all"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Моя статистика
                   </router-link>
 
                   <router-link
@@ -220,6 +254,8 @@ const handleLogout = async () => {
 const showGuestMessage = (type) => {
   if (type === 'contracts') {
     guestMessage.value = 'Зарегистрируйтесь, чтобы просмотреть ваши договоры.'
+  } else if (type === 'favorites') {
+    guestMessage.value = 'Войдите в систему, чтобы добавлять автомобили в избранное.'
   }
   
   // Автоматически скрыть через 5 секунд

@@ -140,7 +140,8 @@ import { ref, onMounted } from 'vue'
 import { getErrorMessage } from '../../utils/errorHandler'
 import { useNotification } from '../../composables/useNotification'
 import ModelFormModal from './ModelFormModal.vue'
-import api from '../../services/api'
+import { getAdminModels, deleteModel as deleteModelService } from '../../services/adminService'
+import { getBodyTypes, getClasses } from '../../services/carService'
 
 const { showNotification, showConfirm } = useNotification()
 
@@ -162,12 +163,12 @@ const filters = ref({
 
 const loadFilterOptions = async () => {
   try {
-    const [bodyTypesRes, classesRes] = await Promise.all([
-      api.get('/car/filters/body-types'),
-      api.get('/admin/filters/classes')
+    const [bodyTypes, classes] = await Promise.all([
+      getBodyTypes(),
+      getClasses()
     ])
-    allBodyTypes.value = bodyTypesRes.data
-    allClasses.value = classesRes.data
+    allBodyTypes.value = bodyTypes
+    allClasses.value = classes
   } catch (error) {
     console.error('Не удалось загрузить опции фильтров:', error)
   }
@@ -185,10 +186,10 @@ const loadModels = async (page = 0) => {
       ...(filters.value.carClass && { car_class: filters.value.carClass })
     }
     
-    const response = await api.get('/admin/models', { params })
-    models.value = response.data.content
-    currentPage.value = response.data.page.number
-    totalPages.value = response.data.page.totalPages
+    const response = await getAdminModels(params)
+    models.value = response.content
+    currentPage.value = response.page.number
+    totalPages.value = response.page.totalPages
   } catch (error) {
     console.error('Error loading models:', error)
     showNotification({
@@ -230,7 +231,7 @@ const deleteModel = async (modelId) => {
   if (!confirmed) return
   
   try {
-    await api.delete(`/admin/models/${modelId}`)
+    await deleteModelService(modelId)
     await loadModels(currentPage.value)
     showNotification({
       type: 'success',
